@@ -14,7 +14,7 @@
 | `package.json`                           | Private-by-default package identity, ESM exports, declarations, dependencies, and package contents. |
 | `pnpm-lock.yaml`                         | Locked JavaScript dependencies.                                                                     |
 | `vite.config.ts`                         | Vite+ formatter, linter, tests, declaration packaging, and aggregate tasks.                         |
-| `tsconfig.json`                          | Strictest preset with library module and source-checking overrides.                                 |
+| `tsconfig.json`                          | Strictest and node-ts presets with minimal library source-checking overrides.                       |
 | `flake.nix`                              | Development shells only, with Node.js, Vite+, Bun, and nixfmt.                                      |
 | `flake.lock`                             | Pinned Nix inputs.                                                                                  |
 | `.envrc`                                 | Optional direnv entry point.                                                                        |
@@ -77,13 +77,15 @@ Run `vp run fix` and `vp run ci`.
 The aggregate task runs `check`, `test`, and `build` concurrently, with `package` running `npm pack --dry-run` only after `build` completes.
 All tasks, including `fix`, use Vite+ default caching.
 The build task excludes `dist/**` from automatic inputs and restores `dist/**` outputs on cache hits.
-Keep `dist/` ignored so concurrent checks do not scan generated declarations.
+Keep `dist/` ignored by the formatter and linter.
+TypeScript uses default file discovery, which can include built declarations.
 Use `vp run --no-cache ci` when a fresh execution is needed.
 No task starts an application or builds a Nix package.
 Inspect `dist/index.js` and `dist/index.d.ts`, then run `npm pack --pack-destination tmp` after creating `tmp/`.
 Install that archive into an isolated consumer under `tmp/`, compile an ESM TypeScript import by package name with strict NodeNext resolution, and execute the exported function.
 Check positive return types and rejected invalid arguments, not just declaration-file existence.
 Keep temporary consumers and archives under ignored `tmp/` and out of commits.
+Remove temporary TypeScript consumers before whole-project checks, because TypeScript discovery does not honor `.gitignore`.
 Update `pnpm-lock.yaml` when dependencies change and `flake.lock` when Nix inputs change.
 Validate both the active CI workflow and disabled publication file with actionlint without enabling publication.
 Review final documents for obsolete placeholders and links before committing.
