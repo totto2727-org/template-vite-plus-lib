@@ -20,13 +20,27 @@ export default defineConfig({
   pack: { entry: ['src/index.ts'], format: ['esm'], platform: 'neutral', dts: true, clean: true },
   run: {
     tasks: {
+      build: {
+        command: 'vp pack',
+        input: [{ auto: true }, '!dist/**'],
+        output: ['dist/**'],
+      },
+      check: {
+        command: 'vp check',
+      },
       ci: {
-        command: 'vp check && vp test run && vp pack && npm pack --dry-run',
-        cache: false,
+        command: '',
+        dependsOn: ['check', 'test', 'package'],
       },
       fix: {
         command: 'vp check --fix',
-        cache: false,
+      },
+      package: {
+        command: 'npm pack --dry-run',
+        dependsOn: ['build'],
+      },
+      test: {
+        command: 'vp test run',
       },
     },
   },

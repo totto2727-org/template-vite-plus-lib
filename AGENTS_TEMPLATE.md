@@ -26,10 +26,12 @@ flake.nix           Development shells only
 - `nix develop`: Enter the pinned development environment.
 - `vp install --frozen-lockfile`: Install locked development dependencies.
 - `vp run fix`: Apply Vite+ formatting and supported lint fixes with `vp check --fix`.
-- `vp check`: Verify formatting, lint rules, and source types.
-- `vp test run`: Run tests through Vite+ once.
-- `vp pack`: Build the ESM library and TypeScript declarations into `dist/`.
-- `vp run ci`: Run checks, tests, library packaging, and npm contents validation without starting an application or building a Nix package.
+- `vp run check`: Verify formatting, lint rules, and inherited strictest source types through the cached `vp check` task.
+- `vp run test`: Run tests through Vite+ once with task caching.
+- `vp run build`: Build the ESM library and TypeScript declarations with `vp pack`, restoring `dist/**` on cache hits.
+- `vp run ci`: Run check, test, and build in parallel, followed by package contents validation after build.
+- `vp run --no-cache ci`: Execute the same task graph without caching when fresh validation is needed.
+- `vp run package`: Build or restore the library, then inspect npm package contents without publishing.
 - `npm pack --dry-run`: Inspect package contents after `vp pack` without publishing.
 - `npm pack --pack-destination tmp`: Create a real consumer archive after creating `tmp/` and running `vp pack`.
 - `actionlint .github/workflows/ci.yml .github/workflows/publish.yml.disabled`: Validate both workflow definitions without enabling publication. Supply actionlint separately when needed.
@@ -45,7 +47,9 @@ flake.nix           Development shells only
 
 ## Development tools
 
-- **Vite+**: Both formatter and linter use the configuration in `vite.config.ts` through `vp check`. Tests use `vite-plus/test`. `vp pack` delegates library builds and declaration generation to tsdown. `vp build` invokes Vite production builds and does not natively emit declarations, so this library does not add a redundant build alias or declaration plugin.
+- **Vite+**: Both formatter and linter use the configuration in `vite.config.ts` through `vp check`. Tests use `vite-plus/test`. `vp pack` delegates library builds and declaration generation to tsdown. `vp build` invokes Vite production builds and does not natively emit declarations, so the cache-aware `build` task invokes `vp pack` without a declaration plugin.
+- **Task caching**: Vite+ configuration tasks, including `fix`, cache by default. The `ci` dependency graph allows check, test, and build to run concurrently and orders package inspection after build. Build inputs use automatic tracking except `dist/**`. Explicit `output: ["dist/**"]` restores JavaScript and declarations on cache hits. Vite+ automatically declines to cache a `fix` run that reads and rewrites the same input, while unchanged runs can hit cache. Keep `dist/` ignored so concurrent checks do not scan generated files. Do not use `--parallel` to bypass package inspection's build dependency.
+- **TypeScript**: `tsconfig.json` extends the exact `@tsconfig/strictest` 2.0.8 dependency, retaining inherited strictness including `exactOptionalPropertyTypes` and `noUncheckedIndexedAccess`. Local options specify the ESM/NodeNext runtime and no-emit source checks, not duplicate preset flags.
 - **Nix flakes**: Pin the development shell only. The external Vite+ input overlay installs tooling, not a package/CLI overlay exported by this library. The global CLI and local vite-plus dependency are pinned independently. Bun is present for the shared npm publication action.
 - **GitHub Actions**: CI runs `setup-nix@main`, then `setup-typescript@main` with `--frozen-lockfile`, loads the environment with `eval "$(nix print-dev-env "$GITHUB_WORKSPACE#default")"`, and runs `vp run ci`. Keep shared `totto2727-org/monorepo` actions on `@main`.
 
@@ -62,6 +66,7 @@ flake.nix           Development shells only
 
 ## Task-specific documentation
 
+- When changing task dependencies or cache inputs/outputs: [Vite+ run configuration](https://viteplus.dev/config/run) and [automatic tracking](https://viteplus.dev/guide/automatic-data-tracking).
 - When changing library packaging or declarations: [Vite+ pack guide](https://viteplus.dev/guide/pack).
 - When comparing Vite production builds with library packaging: [Vite+ build guide](https://viteplus.dev/guide/build).
 - When enabling registry publication: [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/) and [shared publish-npm action](https://github.com/totto2727-org/monorepo/blob/main/.github/actions/publish-npm/action.yaml).

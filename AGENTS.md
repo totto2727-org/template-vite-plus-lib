@@ -14,7 +14,7 @@
 | `package.json`                           | Private-by-default package identity, ESM exports, declarations, dependencies, and package contents. |
 | `pnpm-lock.yaml`                         | Locked JavaScript dependencies.                                                                     |
 | `vite.config.ts`                         | Vite+ formatter, linter, tests, declaration packaging, and aggregate tasks.                         |
-| `tsconfig.json`                          | Strict source type-checking policy.                                                                 |
+| `tsconfig.json`                          | Strictest preset with library module and source-checking overrides.                                 |
 | `flake.nix`                              | Development shells only, with Node.js, Vite+, Bun, and nixfmt.                                      |
 | `flake.lock`                             | Pinned Nix inputs.                                                                                  |
 | `.envrc`                                 | Optional direnv entry point.                                                                        |
@@ -44,7 +44,7 @@ Keep `private: true` until the user explicitly configures publication.
 Retain Vite+ for both formatting and linting, with all existing formatter settings including `semi: false`, single quotes, print width 120, and preserved Markdown wrapping.
 Do not add `CLAUDE.md`, `package.nix`, Nix package/CLI overlay outputs, CLI entry points, or Nix build CI.
 
-Use `vp pack` as the single library build command with `pack.dts: true`.
+Use `vp pack` to build the library with `pack.dts: true`, or `vp run build` for the cache-aware task.
 The [official build guide](https://viteplus.dev/guide/build) says `vp build` always invokes Vite's production build, even when a build script exists.
 The [official pack guide](https://viteplus.dev/guide/pack) specifies `vp pack` for libraries and built-in declaration generation.
 Vite library mode can bundle JavaScript through `vp build`, but declarations require additional tooling.
@@ -74,7 +74,12 @@ Keep `private: true` unless npm publication is explicitly wanted.
 ### 5. Validate and hand off
 
 Run `vp run fix` and `vp run ci`.
-The aggregate task runs `vp check`, `vp test run`, `vp pack`, and `npm pack --dry-run`, without starting an application or building a Nix package.
+The aggregate task runs `check`, `test`, and `build` concurrently, with `package` running `npm pack --dry-run` only after `build` completes.
+All tasks, including `fix`, use Vite+ default caching.
+The build task excludes `dist/**` from automatic inputs and restores `dist/**` outputs on cache hits.
+Keep `dist/` ignored so concurrent checks do not scan generated declarations.
+Use `vp run --no-cache ci` when a fresh execution is needed.
+No task starts an application or builds a Nix package.
 Inspect `dist/index.js` and `dist/index.d.ts`, then run `npm pack --pack-destination tmp` after creating `tmp/`.
 Install that archive into an isolated consumer under `tmp/`, compile an ESM TypeScript import by package name with strict NodeNext resolution, and execute the exported function.
 Check positive return types and rejected invalid arguments, not just declaration-file existence.
