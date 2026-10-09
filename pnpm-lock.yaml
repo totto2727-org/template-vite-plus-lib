@@ -167,19 +167,19 @@ importers:
   .:
     devDependencies:
       '@tsconfig/node-ts':
-        specifier: 23.6.4
+        specifier: ^23.6.4
         version: 23.6.4
       '@tsconfig/strictest':
-        specifier: 2.0.8
+        specifier: ^2.0.8
         version: 2.0.8
       '@types/node':
-        specifier: 24.13.4
+        specifier: ^24.13.4
         version: 24.13.4
       typescript:
-        specifier: 7.0.2
+        specifier: ^7.0.2
         version: 7.0.2
       vite-plus:
-        specifier: 0.3.0
+        specifier: ^0.3.0
         version: 0.3.0(@types/node@24.13.4)(typescript@7.0.2)(vite@8.3.0(@types/node@24.13.4))
 
 packages:
