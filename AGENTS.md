@@ -12,7 +12,8 @@
 | `src/greet.ts`                           | Sample library function to replace.                                                                 |
 | `src/greet.test.ts`                      | Tests through the public library entry point.                                                       |
 | `package.json`                           | Private-by-default package identity, ESM exports, declarations, dependencies, and package contents. |
-| `pnpm-lock.yaml`                         | Locked JavaScript dependencies.                                                                     |
+| `bun.lock`                               | Sole dependency lock for Bun.                                                                       |
+| `bunfig.toml`                            | Bun installation policy, including the 24-hour release-age requirement.                             |
 | `vite.config.ts`                         | Vite+ formatter, linter, tests, declaration packaging, and aggregate tasks.                         |
 | `tsconfig.json`                          | Strictest and node-ts presets with minimal library source-checking overrides.                       |
 | `flake.nix`                              | Development shells only, with Node.js, Vite+, Bun, and nixfmt.                                      |
@@ -30,9 +31,9 @@
 Work from the copied repository root.
 Use the user's intended repository, package name, purpose, license, and publication target.
 Ask for missing registry ownership decisions rather than inventing credentials or publishing permissions.
-Enter `nix develop`, then run `vp install --frozen-lockfile`.
+Enter `nix develop`, then run `bun install --frozen-lockfile`.
 Review `.envrc` before explicitly allowing direnv.
-CI uses `setup-nix@main`, then `setup-typescript@main`, and loads the shell in its run step with `eval "$(nix print-dev-env "$GITHUB_WORKSPACE#default")"`.
+CI uses `setup-nix@main`, then `setup-typescript@main`, which selects Bun through `packageManager`, and loads the shell in its run step with `eval "$(nix print-dev-env "$GITHUB_WORKSPACE#default")"`.
 Keep all `totto2727-org/monorepo` action references on `@main`.
 
 ### 2. Replace the library and metadata
@@ -74,18 +75,24 @@ Keep `private: true` unless npm publication is explicitly wanted.
 ### 5. Validate and hand off
 
 Run `vp run fix` and `vp run ci`.
-The aggregate task runs `check`, `test`, and `build` concurrently, with `package` running `npm pack --dry-run` only after `build` completes.
+The aggregate task runs `check`, `test`, and `build` concurrently, with `package` running `bun pm pack --dry-run` only after `build` completes.
 All tasks, including `fix`, use Vite+ default caching.
 The build task excludes `dist/**` from automatic inputs and restores `dist/**` outputs on cache hits.
 Keep `dist/` ignored by the formatter and linter.
 TypeScript uses default file discovery, which can include built declarations.
 Use `vp run --no-cache ci` when a fresh execution is needed.
 No task starts an application or builds a Nix package.
-Inspect `dist/index.js` and `dist/index.d.ts`, then run `npm pack --pack-destination tmp` after creating `tmp/`.
+Inspect `dist/index.js` and `dist/index.d.ts`, then run `bun pm pack --destination tmp` after creating `tmp/`.
 Install that archive into an isolated consumer under `tmp/`, compile an ESM TypeScript import by package name with strict NodeNext resolution, and execute the exported function.
 Check positive return types and rejected invalid arguments, not just declaration-file existence.
 Keep temporary consumers and archives under ignored `tmp/` and out of commits.
 Remove temporary TypeScript consumers before whole-project checks, because TypeScript discovery does not honor `.gitignore`.
-Update `pnpm-lock.yaml` when dependencies change and `flake.lock` when Nix inputs change.
+Use Bun as the only package manager and update `bun.lock` with `bun install` when dependencies change.
+Keep `packageManager` aligned with the pinned Nix shell's Bun version.
+Keep `bunfig.toml`'s `minimumReleaseAge = 86400` for new direct and transitive resolutions, without exclusions or unsupported strict fields.
+See [Bun minimum release age](https://bun.com/docs/cli/install#minimum-release-age).
+Retain only the official Vite+ `vite` alias and bundled `vitest` overrides in `package.json`.
+When updating Vite+, match the `vite` alias to the installed `vite-plus` version and the `vitest` override to `vp toolchain vitest`.
+Update `flake.lock` only when Nix inputs change.
 Validate both the active CI workflow and disabled publication file with actionlint without enabling publication.
 Review final documents for obsolete placeholders and links before committing.

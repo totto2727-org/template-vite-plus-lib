@@ -20,7 +20,7 @@ console.log(message) // Hello, TypeScript!
 
 ## Prerequisites
 
-- **Node.js**: Version 24 or newer with an ESM project.
+- **Bun**: Install Bun to manage dependencies in an ESM project. The built library also supports Node.js 24 or newer.
 
 ## Setup
 
@@ -28,7 +28,7 @@ This starter is not published to npm.
 Install a locally supplied package archive as a project dependency:
 
 ```bash
-npm install ./template-vite-plus-lib-0.0.0.tgz
+bun add ./template-vite-plus-lib-0.0.0.tgz
 ```
 
 ## API
