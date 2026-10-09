@@ -22,8 +22,10 @@ export default defineConfig({
     tasks: {
       build: {
         command: 'vp pack',
-        input: [{ auto: true }, '!dist/**'],
-        output: ['dist/**'],
+        cache: {
+          input: [{ auto: true }, '!dist/**'],
+          output: ['dist/**'],
+        },
       },
       check: {
         command: 'vp check',
