@@ -19,7 +19,7 @@
 | `flake.nix`                              | Development shells only, with Node.js, Vite+, Bun, and nixfmt.                                      |
 | `flake.lock`                             | Pinned Nix inputs.                                                                                  |
 | `.envrc`                                 | Optional direnv entry point.                                                                        |
-| `.github/workflows/ci.yml`               | Pre-merge checks, tests, library packaging, and npm contents validation.                            |
+| `.github/workflows/ci.yml`               | Pre-merge checks, tests, and library packaging.                                                     |
 | `.github/workflows/publish.yml.disabled` | Disabled repository-linked npm OIDC publication.                                                    |
 | `.gitignore`                             | Local dependencies, generated output, archives, and temporary files excluded from Git.              |
 | `LICENSE`                                | License and copyright holder to review.                                                             |
@@ -75,7 +75,7 @@ Keep `private: true` unless npm publication is explicitly wanted.
 ### 5. Validate and hand off
 
 Run `vp run fix` and `vp run ci`.
-The aggregate task runs `check`, `test`, and `build` concurrently, with `package` running `vp pm pack -- --dry-run` only after `build` completes.
+The aggregate task runs `check`, `test`, and `build` concurrently.
 All tasks, including `fix`, use Vite+ default caching.
 The build task excludes `dist/**` from automatic inputs and restores `dist/**` outputs on cache hits.
 Keep `dist/` ignored by the formatter and linter.
