@@ -26,7 +26,7 @@ flake.nix           Development shells only
 ### Standard tasks
 
 - `nix develop`: Enter the pinned development environment.
-- `bun install --frozen-lockfile`: Install locked development dependencies.
+- `vp install --frozen-lockfile`: Install locked development dependencies.
 - `vp run fix`: Apply Vite+ formatting and supported lint fixes with `vp check --fix`.
 - `vp run check`: Verify formatting, lint rules, and inherited strictest source types through the cached `vp check` task.
 - `vp run test`: Run tests through Vite+ once with task caching.
@@ -34,8 +34,8 @@ flake.nix           Development shells only
 - `vp run ci`: Run check, test, and build in parallel, followed by package contents validation after build.
 - `vp run --no-cache ci`: Execute the same task graph without caching when fresh validation is needed.
 - `vp run package`: Build or restore the library, then inspect npm package contents without publishing.
-- `bun pm pack --dry-run`: Inspect package contents after `vp pack` without publishing.
-- `bun pm pack --destination tmp`: Create a real consumer archive after creating `tmp/` and running `vp pack`.
+- `vp pm pack -- --dry-run`: Inspect package contents after `vp pack` without publishing.
+- `vp pm pack --pack-destination tmp`: Create a real consumer archive after creating `tmp/` and running `vp pack`.
 - `actionlint .github/workflows/ci.yml .github/workflows/publish.yml.disabled`: Validate both workflow definitions without enabling publication. Supply actionlint separately when needed.
 
 ## Architecture
@@ -58,14 +58,14 @@ flake.nix           Development shells only
 ## Package-specific rules
 
 - Keep all existing formatter defaults, including no semicolons, single quotes, print width 120, and preserved Markdown wrapping.
-- Keep `files: ["dist"]` aligned with generated outputs. Use Bun as the only package manager and update `bun.lock` with `bun install` when dependencies change. Keep `packageManager` aligned with the pinned Nix shell's Bun version. Update `flake.lock` only when Nix inputs change.
+- Keep `files: ["dist"]` aligned with generated outputs. Use Bun as the only package manager and update `bun.lock` with `vp install` when dependencies change. Keep `packageManager` aligned with the pinned Nix shell's Bun version. Update `flake.lock` only when Nix inputs change.
 - Keep `bunfig.toml`'s `minimumReleaseAge = 86400` for new dependency resolutions, without exclusions or unsupported strict fields. Keep only Vite+'s official `vite` alias and bundled `vitest` overrides in `package.json`. When updating Vite+, match the alias to the installed `vite-plus` version and the `vitest` override to `vp toolchain vitest`. See [Bun minimum release age](https://bun.com/docs/cli/install#minimum-release-age).
 - Do not introduce `package.nix`, Nix package or CLI overlay outputs, CLI installation routes, or Nix build CI.
-- Keep README usage consumer-focused, document all public exports, and use only supported dependency installation paths. Do not claim npm availability before the package exists.
+- Keep README usage consumer-focused, document all public exports, and use only supported dependency installation paths. Write registry setup for the configured package name, assuming publication.
 - Keep `private: true` and `publish.yml.disabled` until the package owner configures npm trusted publishing for the exact GitHub owner, repository, and workflow filename `publish.yml`. If an initial package publication is required to create registry settings, the owner must perform it manually. Permit direct publishing, not staged-only publishing. Match any configured environment with a protected workflow job environment.
 - Before enabling publication, review package metadata, third-party action pins, protected release tags, and a real packed consumer. Remove `private: true` and rename the disabled file to `publish.yml` only after registry linking. Use a protected `v<version>` tag matching the manifest from a validated commit.
 - Retain job-scoped `id-token: write` and a GitHub-hosted runner. Do not add long-lived registry tokens. The publish workflow installs locked dependencies, runs `vp pack`, then calls `publish-npm@main` with the required `working-directory: .`. It must not duplicate pre-merge checks, tests, or dry runs.
-- The shared publish action uses `bun publish` and skips versions already present on the registry. Use a new version for changed contents. Keep the workflow disabled or remove it when publication is not wanted.
+- The shared publish action uses `vp pm stage publish -r --provenance` and filters private packages and versions already present on the registry. Use a new version for changed contents. Keep the workflow disabled or remove it when publication is not wanted.
 
 ## Task-specific documentation
 
