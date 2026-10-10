@@ -12,7 +12,8 @@
 | `src/greet.ts`                           | Sample library function to replace.                                                                 |
 | `src/greet.test.ts`                      | Tests through the public library entry point.                                                       |
 | `package.json`                           | Private-by-default package identity, ESM exports, declarations, dependencies, and package contents. |
-| `pnpm-lock.yaml`                         | Locked JavaScript dependencies.                                                                     |
+| `bun.lock`                               | Sole dependency lock for Bun.                                                                       |
+| `bunfig.toml`                            | Bun installation policy, including the 24-hour release-age requirement.                             |
 | `vite.config.ts`                         | Vite+ formatter, linter, tests, declaration packaging, and aggregate tasks.                         |
 | `tsconfig.json`                          | Strictest and node-ts presets with minimal library source-checking overrides.                       |
 | `flake.nix`                              | Development shells only, with Node.js, Vite+, Bun, and nixfmt.                                      |
@@ -32,7 +33,7 @@ Use the user's intended repository, package name, purpose, license, and publicat
 Ask for missing registry ownership decisions rather than inventing credentials or publishing permissions.
 Enter `nix develop`, then run `vp install --frozen-lockfile`.
 Review `.envrc` before explicitly allowing direnv.
-CI uses `setup-nix@main`, then `setup-typescript@main`, and loads the shell in its run step with `eval "$(nix print-dev-env "$GITHUB_WORKSPACE#default")"`.
+CI uses `setup-nix@main`, then `setup-typescript@main`, which selects Bun through `packageManager`, and loads the shell in its run step with `eval "$(nix print-dev-env "$GITHUB_WORKSPACE#default")"`.
 Keep all `totto2727-org/monorepo` action references on `@main`.
 
 ### 2. Replace the library and metadata
@@ -53,7 +54,7 @@ This template deliberately uses the smaller native `vp pack` configuration inste
 ### 3. Create the project's documentation
 
 Customize `README_TEMPLATE.md` around consumer usage, prerequisites, dependency installation, and every public export.
-Its local archive setup is usable before registry publication. Replace it with the actual npm dependency installation command only when that package exists.
+Use `vp add` with the configured package name for registry installation, assuming the package will be published.
 Do not add a CLI installation matrix or developer build commands to the consumer README.
 Customize `AGENTS_TEMPLATE.md` around the actual paths, tasks, library boundaries, and publication constraints.
 Remove obsolete placeholder content and initialization guidance from the final project documents.
@@ -67,25 +68,31 @@ Keep `private: true` unless npm publication is explicitly wanted.
 
 1. Set the real package name, version, and repository URL, and ensure the npm package exists under an account or organization the user controls. If npm requires an initial authenticated publication before trusted-publisher settings exist, the package owner must perform it manually.
 2. Configure the package's npm Trusted Publisher with the exact GitHub owner, repository, and workflow filename `publish.yml`. Enable direct publication, not staged-only publishing. If an npm trusted-publisher environment is configured, add the matching protected environment to the workflow job.
-3. Review the [npm trusted publishing requirements](https://docs.npmjs.com/trusted-publishers/) and current shared [publish-npm action](https://github.com/totto2727-org/monorepo/blob/main/.github/actions/publish-npm/action.yaml). It runs `bun publish` after skipping versions already on the registry. The pinned development shell supplies Bun. Keep job-scoped `id-token: write`, the GitHub-hosted runner, and `working-directory: .`. Do not add long-lived npm tokens.
+3. Review the [npm trusted publishing requirements](https://docs.npmjs.com/trusted-publishers/) and current shared [publish-npm action](https://github.com/totto2727-org/monorepo/blob/main/.github/actions/publish-npm/action.yaml). It runs `vp pm stage publish -r --provenance` after filtering private packages and versions already on the registry. The pinned development shell supplies Bun. Keep job-scoped `id-token: write`, the GitHub-hosted runner, and `working-directory: .`. Do not add long-lived npm tokens.
 4. Review third-party action pins and protect release tags. Remove `private: true` only when ready, then rename `publish.yml.disabled` to `publish.yml`. Delete the disabled workflow instead if publication is not wanted.
 5. Run pre-merge validation and review a real packed consumer before tagging. Push a protected `v<version>` tag that matches `package.json` only from a validated commit. The workflow installs locked dependencies, runs `vp pack`, and calls `totto2727-org/monorepo/.github/actions/publish-npm@main`. Do not duplicate CI checks, tests, or dry runs in the publish workflow. Use a new version for changed contents.
 
 ### 5. Validate and hand off
 
 Run `vp run fix` and `vp run ci`.
-The aggregate task runs `check`, `test`, and `build` concurrently, with `package` running `npm pack --dry-run` only after `build` completes.
+The aggregate task runs `check`, `test`, and `build` concurrently, with `package` running `vp pm pack -- --dry-run` only after `build` completes.
 All tasks, including `fix`, use Vite+ default caching.
 The build task excludes `dist/**` from automatic inputs and restores `dist/**` outputs on cache hits.
 Keep `dist/` ignored by the formatter and linter.
 TypeScript uses default file discovery, which can include built declarations.
 Use `vp run --no-cache ci` when a fresh execution is needed.
 No task starts an application or builds a Nix package.
-Inspect `dist/index.js` and `dist/index.d.ts`, then run `npm pack --pack-destination tmp` after creating `tmp/`.
+Inspect `dist/index.js` and `dist/index.d.ts`, then run `vp pm pack --pack-destination tmp` after creating `tmp/`.
 Install that archive into an isolated consumer under `tmp/`, compile an ESM TypeScript import by package name with strict NodeNext resolution, and execute the exported function.
 Check positive return types and rejected invalid arguments, not just declaration-file existence.
 Keep temporary consumers and archives under ignored `tmp/` and out of commits.
 Remove temporary TypeScript consumers before whole-project checks, because TypeScript discovery does not honor `.gitignore`.
-Update `pnpm-lock.yaml` when dependencies change and `flake.lock` when Nix inputs change.
+Use Bun as the only package manager and update `bun.lock` with `vp install` when dependencies change.
+Keep `packageManager` aligned with the pinned Nix shell's Bun version.
+Keep `bunfig.toml`'s `minimumReleaseAge = 86400` for new direct and transitive resolutions, without exclusions or unsupported strict fields.
+See [Bun minimum release age](https://bun.com/docs/cli/install#minimum-release-age).
+Retain only the official Vite+ `vite` alias and bundled `vitest` overrides in `package.json`.
+When updating Vite+, match the `vite` alias to the installed `vite-plus` version and the `vitest` override to `vp toolchain vitest`.
+Update `flake.lock` only when Nix inputs change.
 Validate both the active CI workflow and disabled publication file with actionlint without enabling publication.
 Review final documents for obsolete placeholders and links before committing.
