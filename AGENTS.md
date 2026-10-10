@@ -12,11 +12,11 @@
 | `src/greet.ts`                           | Sample library function to replace.                                                                 |
 | `src/greet.test.ts`                      | Tests through the public library entry point.                                                       |
 | `package.json`                           | Private-by-default package identity, ESM exports, declarations, dependencies, and package contents. |
-| `bun.lock`                               | Sole dependency lock for Bun.                                                                       |
-| `bunfig.toml`                            | Bun installation policy, including the 24-hour release-age requirement.                             |
+| `pnpm-lock.yaml`                         | Sole dependency lock for pnpm.                                                                      |
+| `pnpm-workspace.yaml`                    | pnpm installation policy, including the 24-hour release-age requirement.                            |
 | `vite.config.ts`                         | Vite+ formatter, linter, tests, declaration packaging, and aggregate tasks.                         |
 | `tsconfig.json`                          | Strictest and node-ts presets with minimal library source-checking overrides.                       |
-| `flake.nix`                              | Development shells only, with Node.js, Vite+, Bun, and nixfmt.                                      |
+| `flake.nix`                              | Development shells only, with Node.js, Vite+, pnpm, and nixfmt.                                     |
 | `flake.lock`                             | Pinned Nix inputs.                                                                                  |
 | `.envrc`                                 | Optional direnv entry point.                                                                        |
 | `.github/workflows/ci.yml`               | Pre-merge checks, tests, library packaging, and npm contents validation.                            |
@@ -33,7 +33,7 @@ Use the user's intended repository, package name, purpose, license, and publicat
 Ask for missing registry ownership decisions rather than inventing credentials or publishing permissions.
 Enter `nix develop`, then run `vp install --frozen-lockfile`.
 Review `.envrc` before explicitly allowing direnv.
-CI uses `setup-nix@main`, then `setup-typescript@main`, which selects Bun through `packageManager`, and loads the shell in its run step with `eval "$(nix print-dev-env "$GITHUB_WORKSPACE#default")"`.
+CI uses `setup-nix@main`, then `setup-typescript@main`, which selects pnpm through `packageManager`, and loads the shell in its run step with `eval "$(nix print-dev-env "$GITHUB_WORKSPACE#default")"`.
 Keep all `totto2727-org/monorepo` action references on `@main`.
 
 ### 2. Replace the library and metadata
@@ -68,7 +68,7 @@ Keep `private: true` unless npm publication is explicitly wanted.
 
 1. Set the real package name, version, and repository URL, and ensure the npm package exists under an account or organization the user controls. If npm requires an initial authenticated publication before trusted-publisher settings exist, the package owner must perform it manually.
 2. Configure the package's npm Trusted Publisher with the exact GitHub owner, repository, and workflow filename `publish.yml`. Enable direct publication, not staged-only publishing. If an npm trusted-publisher environment is configured, add the matching protected environment to the workflow job.
-3. Review the [npm trusted publishing requirements](https://docs.npmjs.com/trusted-publishers/) and current shared [publish-npm action](https://github.com/totto2727-org/monorepo/blob/main/.github/actions/publish-npm/action.yaml). It runs `vp pm stage publish -r --provenance` after filtering private packages and versions already on the registry. The pinned development shell supplies Bun. Keep job-scoped `id-token: write`, the GitHub-hosted runner, and `working-directory: .`. Do not add long-lived npm tokens.
+3. Review the [npm trusted publishing requirements](https://docs.npmjs.com/trusted-publishers/) and current shared [publish-npm action](https://github.com/totto2727-org/monorepo/blob/main/.github/actions/publish-npm/action.yaml). It runs `vp pm stage publish -r --provenance` after filtering private packages and versions already on the registry. The pinned development shell supplies pnpm. Keep job-scoped `id-token: write`, the GitHub-hosted runner, and `working-directory: .`. Do not add long-lived npm tokens.
 4. Review third-party action pins and protect release tags. Remove `private: true` only when ready, then rename `publish.yml.disabled` to `publish.yml`. Delete the disabled workflow instead if publication is not wanted.
 5. Run pre-merge validation and review a real packed consumer before tagging. Push a protected `v<version>` tag that matches `package.json` only from a validated commit. The workflow installs locked dependencies, runs `vp pack`, and calls `totto2727-org/monorepo/.github/actions/publish-npm@main`. Do not duplicate CI checks, tests, or dry runs in the publish workflow. Use a new version for changed contents.
 
@@ -87,11 +87,11 @@ Install that archive into an isolated consumer under `tmp/`, compile an ESM Type
 Check positive return types and rejected invalid arguments, not just declaration-file existence.
 Keep temporary consumers and archives under ignored `tmp/` and out of commits.
 Remove temporary TypeScript consumers before whole-project checks, because TypeScript discovery does not honor `.gitignore`.
-Use Bun as the only package manager and update `bun.lock` with `vp install` when dependencies change.
-Keep `packageManager` aligned with the pinned Nix shell's Bun version.
-Keep `bunfig.toml`'s `minimumReleaseAge = 86400` for new direct and transitive resolutions, without exclusions or unsupported strict fields.
-See [Bun minimum release age](https://bun.com/docs/cli/install#minimum-release-age).
-Retain only the official Vite+ `vite` alias and bundled `vitest` overrides in `package.json`.
+Use pnpm as the only package manager and update `pnpm-lock.yaml` with `vp install` when dependencies change.
+Keep `packageManager` aligned with the pinned Nix shell's pnpm version.
+Keep `pnpm-workspace.yaml`'s `minimumReleaseAge: 1440` and `minimumReleaseAgeStrict: true` for new direct and transitive resolutions, with no exclusions.
+See [pnpm dependency policy](https://pnpm.io/settings#minimumreleaseage).
+Keep the exact Vite+ 1.1.0 catalog entry and official `vite@*` alias and bundled `vitest@*` 5.0.3 overrides in `pnpm-workspace.yaml`. Preserve caret ranges on the other dependencies and deny Vite+ lifecycle scripts through `allowBuilds`.
 When updating Vite+, match the `vite` alias to the installed `vite-plus` version and the `vitest` override to `vp toolchain vitest`.
 Update `flake.lock` only when Nix inputs change.
 Validate both the active CI workflow and disabled publication file with actionlint without enabling publication.
