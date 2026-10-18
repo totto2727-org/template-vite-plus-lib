@@ -40,6 +40,13 @@ flake.nix           Development shells only
 
 ## Architecture
 
+### CI and publication policy
+
+- Keep the inherited CI and publication workflows unchanged by default.
+- Do not replace publication on pushes to `main` with tag or release triggers. Preserve existing tag triggers where already configured.
+- Change workflows only for an explicit user request or a demonstrated project requirement, and explain why the change is necessary.
+- Publication setup does not justify unrelated CI changes.
+
 ### Public library boundary
 
 - Export the consumer API from `src/index.ts` and test that public entry point.
