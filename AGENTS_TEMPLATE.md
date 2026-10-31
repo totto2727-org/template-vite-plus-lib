@@ -8,8 +8,8 @@ src/greet.ts        Greeting implementation
 src/greet.test.ts   Public-entry-point tests
 vite.config.ts      Vite+ formatter, linter, tests, packaging, and tasks
 package.json        Package identity and runtime/type export map
-bun.lock            Sole dependency lock for Bun
-bunfig.toml         Bun installation policy and 24-hour release-age requirement
+pnpm-lock.yaml            Sole dependency lock for pnpm
+pnpm-workspace.yaml         pnpm installation policy and 24-hour release-age requirement
 flake.nix           Development shells only
 .github/workflows/  CI and disabled optional npm publication
 ```
@@ -18,21 +18,20 @@ flake.nix           Development shells only
 
 ### Execution rules
 
-- Run commands from the repository root inside `nix develop`.
+- Bootstrap Node.js 24, the pnpm version in `packageManager`, and Vite+ on `PATH` before running `nix develop` from the repository root.
 - Use Vite+ for both formatting and linting, source type checks, tests, and library packaging.
 - Keep temporary consumers and package archives under ignored `tmp/` and out of commits.
 - Keep `AGENTS.md` canonical without creating `CLAUDE.md`.
 
 ### Standard tasks
 
-- `nix develop`: Enter the pinned development environment.
+- `nix develop`: Enter the pinned nixfmt environment and run `vp config` using the externally available Vite+ CLI.
 - `vp install --frozen-lockfile`: Install locked development dependencies.
 - `vp run fix`: Apply Vite+ formatting and supported lint fixes with `vp check --fix`.
 - `vp run check`: Verify formatting, lint rules, and inherited strictest source types through the cached `vp check` task.
 - `vp run test`: Run tests through Vite+ once with task caching.
 - `vp run build`: Build the ESM library and TypeScript declarations with `vp pack`, restoring `dist/**` on cache hits.
 - `vp run ci`: Run check, test, and build in parallel, followed by package contents validation after build.
-- `vp run --no-cache ci`: Execute the same task graph without caching when fresh validation is needed.
 - `vp run package`: Build or restore the library, then inspect npm package contents without publishing.
 - `vp pm pack -- --dry-run`: Inspect package contents after `vp pack` without publishing.
 - `vp pm pack --pack-destination tmp`: Create a real consumer archive after creating `tmp/` and running `vp pack`.
@@ -57,19 +56,20 @@ flake.nix           Development shells only
 ## Development tools
 
 - **Vite+**: Both formatter and linter use the configuration in `vite.config.ts` through `vp check`. Tests use `vite-plus/test`. `vp pack` delegates library builds and declaration generation to tsdown. `vp build` invokes Vite production builds and does not natively emit declarations, so the cache-aware `build` task invokes `vp pack` without a declaration plugin.
-- **Task caching**: Vite+ configuration tasks, including `fix`, cache by default. The `ci` dependency graph allows check, test, and build to run concurrently and orders package inspection after build. Build inputs use automatic tracking except `dist/**`. Explicit `cache: { output: ["dist/**"] }` restores JavaScript and declarations on cache hits. Vite+ automatically declines to cache a `fix` run that reads and rewrites the same input, while unchanged runs can hit cache. Keep `dist/` ignored by the formatter and linter. TypeScript default discovery can include built declarations. Do not use `--parallel` to bypass package inspection's build dependency.
-- **TypeScript**: `tsconfig.json` extends exact presets `@tsconfig/strictest` 2.0.8, then `@tsconfig/node-ts` 23.6.4. It retains strictness including `exactOptionalPropertyTypes` and `noUncheckedIndexedAccess`, and inherits import-extension rewriting, erasable syntax, and verbatim module syntax. Rewriting enables TypeScript import extensions without a duplicate local flag. Local options are only ESNext, NodeNext, no-emit source checks, and Node types. NodeNext module resolution is inferred from the module setting. Use default TypeScript file discovery without local include/exclude lists. Remove temporary TypeScript consumers before whole-project checks because discovery does not honor `.gitignore`.
-- **Nix flakes**: Pin the development shell only. The external Vite+ input overlay installs tooling, not a package/CLI overlay exported by this library. The global CLI and local vite-plus dependency are pinned independently. Bun installs dependencies, creates package archives, and supports the shared npm publication action.
-- **GitHub Actions**: CI runs `setup-nix@main`, then `setup-typescript@main` with `--frozen-lockfile`, which selects Bun through `packageManager`, loads the environment with `eval "$(nix print-dev-env "$GITHUB_WORKSPACE#default")"`, and runs `vp run ci`. Keep shared `totto2727-org/monorepo` actions on `@main`.
+- **Task caching**: Vite+ configuration tasks, including `fix`, cache by default. The `ci` dependency graph allows check, test, and build to run concurrently. Build inputs use automatic tracking except `dist/**`. Explicit `cache: { output: ["dist/**"] }` restores JavaScript and declarations on cache hits. Vite+ automatically declines to cache a `fix` run that reads and rewrites the same input, while unchanged runs can hit cache. Keep `dist/` ignored by the formatter and linter. TypeScript default discovery can include built declarations.
+- **TypeScript**: `tsconfig.json` extends the caret-versioned presets `@tsconfig/strictest`, then `@tsconfig/node-ts`. It retains strictness including `exactOptionalPropertyTypes` and `noUncheckedIndexedAccess`, and inherits import-extension rewriting, erasable syntax, and verbatim module syntax. Rewriting enables TypeScript import extensions without a duplicate local flag. Local options are only ESNext, NodeNext, no-emit source checks, and Node types. NodeNext module resolution is inferred from the module setting. Use default TypeScript file discovery without local include/exclude lists. Remove temporary TypeScript consumers before whole-project checks because discovery does not honor `.gitignore`.
+- **Nix flakes**: Pin the development shell only. This library's default shell supplies only nixfmt and runs the externally available `vp config` to enable Git hooks. The `ci` shell supplies the same tools with an empty shell hook. Bootstrap Node.js 24, pnpm, and Vite+ externally before entering the shell. CI uses the shared TypeScript setup for these tools. Preserve the nixfmt-only shell adopted by main in merged PR #8. This library does not require a native application build or export a package/CLI overlay. Leave unrelated Bun CLIs unmanaged. pnpm installs dependencies, creates package archives, and supports the shared npm publication action.
+- **GitHub Actions**: CI runs `setup-nix@main` with `dev-shell: ci`, then `setup-typescript@main`. The shared TypeScript setup selects pnpm through `packageManager`, and verification loads the hook-free environment with `eval "$(nix print-dev-env "$GITHUB_WORKSPACE#ci")"` and runs `vp run ci`. All tasks retain their default caching. Keep shared `totto2727-org/monorepo` actions on `@main`.
 
 ## Package-specific rules
 
 - Keep all existing formatter defaults, including no semicolons, single quotes, print width 120, and preserved Markdown wrapping.
-- Keep `files: ["dist"]` aligned with generated outputs. Use Bun as the only package manager and update `bun.lock` with `vp install` when dependencies change. Keep `packageManager` aligned with the pinned Nix shell's Bun version. Update `flake.lock` only when Nix inputs change.
-- Keep `bunfig.toml`'s `minimumReleaseAge = 86400` for new dependency resolutions, without exclusions or unsupported strict fields. Keep only Vite+'s official `vite` alias and bundled `vitest` overrides in `package.json`. When updating Vite+, match the alias to the installed `vite-plus` version and the `vitest` override to `vp toolchain vitest`. See [Bun minimum release age](https://bun.com/docs/cli/install#minimum-release-age).
+- Keep `files: ["dist"]` aligned with generated outputs. Use pnpm as the only package manager and update `pnpm-lock.yaml` with `vp install` when dependencies change. Keep the external pnpm toolchain aligned with `packageManager`. Update `flake.lock` only when Nix inputs change.
+- Keep `pnpm-workspace.yaml`'s `minimumReleaseAge: 1440` and `minimumReleaseAgeStrict: true` for all new dependency resolutions, without exclusions. Keep the exact Vite+ 1.1.0 catalog entry and official `vite@*` alias and bundled `vitest@*` 5.0.3 overrides there. Preserve the other dependencies' caret ranges and deny Vite+ lifecycle scripts with `allowBuilds`. When updating Vite+, match the alias to the installed `vite-plus` version and the `vitest` override to `vp toolchain vitest`. See [pnpm dependency policy](https://pnpm.io/settings#minimumreleaseage).
 - Do not introduce `package.nix`, Nix package or CLI overlay outputs, CLI installation routes, or Nix build CI.
 - Keep README usage consumer-focused, document all public exports, and use only supported dependency installation paths. Write registry setup for the configured package name, assuming publication.
 - Keep `private: true` and `publish.yml.disabled` until the package owner configures npm trusted publishing for the exact GitHub owner, repository, and workflow filename `publish.yml`. If an initial package publication is required to create registry settings, the owner must perform it manually. Permit direct publishing, not staged-only publishing. Match any configured environment with a protected workflow job environment.
+- The disabled publication workflow retains its original setup order and triggers. Review Nix hook bootstrap before enabling publication.
 - Before enabling publication, review package metadata, third-party action pins, protected release tags, and a real packed consumer. Remove `private: true` and rename the disabled file to `publish.yml` only after registry linking. Use a protected `v<version>` tag matching the manifest from a validated commit.
 - Retain job-scoped `id-token: write` and a GitHub-hosted runner. Do not add long-lived registry tokens. The publish workflow installs locked dependencies, runs `vp pack`, then calls `publish-npm@main` with the required `working-directory: .`. It must not duplicate pre-merge checks, tests, or dry runs.
 - The shared publish action uses `vp pm stage publish -r --provenance` and filters private packages and versions already present on the registry. Use a new version for changed contents. Keep the workflow disabled or remove it when publication is not wanted.
