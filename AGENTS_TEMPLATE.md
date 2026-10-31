@@ -18,14 +18,14 @@ flake.nix           Development shells only
 
 ### Execution rules
 
-- Run commands from the repository root inside `nix develop`.
+- Bootstrap Node.js 24, the pnpm version in `packageManager`, and Vite+ on `PATH` before running `nix develop` from the repository root.
 - Use Vite+ for both formatting and linting, source type checks, tests, and library packaging.
 - Keep temporary consumers and package archives under ignored `tmp/` and out of commits.
 - Keep `AGENTS.md` canonical without creating `CLAUDE.md`.
 
 ### Standard tasks
 
-- `nix develop`: Enter the pinned development environment.
+- `nix develop`: Enter the pinned nixfmt environment and run `vp config` using the externally available Vite+ CLI.
 - `vp install --frozen-lockfile`: Install locked development dependencies.
 - `vp run fix`: Apply Vite+ formatting and supported lint fixes with `vp check --fix`.
 - `vp run check`: Verify formatting, lint rules, and inherited strictest source types through the cached `vp check` task.
@@ -59,13 +59,13 @@ flake.nix           Development shells only
 - **Vite+**: Both formatter and linter use the configuration in `vite.config.ts` through `vp check`. Tests use `vite-plus/test`. `vp pack` delegates library builds and declaration generation to tsdown. `vp build` invokes Vite production builds and does not natively emit declarations, so the cache-aware `build` task invokes `vp pack` without a declaration plugin.
 - **Task caching**: Vite+ configuration tasks, including `fix`, cache by default. The `ci` dependency graph allows check, test, and build to run concurrently. Build inputs use automatic tracking except `dist/**`. Explicit `cache: { output: ["dist/**"] }` restores JavaScript and declarations on cache hits. Vite+ automatically declines to cache a `fix` run that reads and rewrites the same input, while unchanged runs can hit cache. Keep `dist/` ignored by the formatter and linter. TypeScript default discovery can include built declarations.
 - **TypeScript**: `tsconfig.json` extends the caret-versioned presets `@tsconfig/strictest`, then `@tsconfig/node-ts`. It retains strictness including `exactOptionalPropertyTypes` and `noUncheckedIndexedAccess`, and inherits import-extension rewriting, erasable syntax, and verbatim module syntax. Rewriting enables TypeScript import extensions without a duplicate local flag. Local options are only ESNext, NodeNext, no-emit source checks, and Node types. NodeNext module resolution is inferred from the module setting. Use default TypeScript file discovery without local include/exclude lists. Remove temporary TypeScript consumers before whole-project checks because discovery does not honor `.gitignore`.
-- **Nix flakes**: Pin the development shell only. The external Vite+ input overlay installs tooling, not a package/CLI overlay exported by this library. The shell supplies Node.js 24, pnpm, Vite+ through nix-vite-plus, and nixfmt, and runs `vp config` to enable Git hooks. It does not install or manage Bun CLIs. The global CLI and local vite-plus dependency are pinned independently. pnpm installs dependencies, creates package archives, and supports the shared npm publication action.
+- **Nix flakes**: Pin the development shell only. This library's shell supplies only nixfmt and runs the externally available `vp config` to enable Git hooks. Bootstrap Node.js 24, pnpm, and Vite+ externally before entering the shell. CI uses the shared TypeScript setup for these tools. Preserve the nixfmt-only shell adopted by main in merged PR #8. This library does not require a native application build or export a package/CLI overlay. Leave unrelated Bun CLIs unmanaged. pnpm installs dependencies, creates package archives, and supports the shared npm publication action.
 - **GitHub Actions**: CI runs `setup-typescript@main` before `setup-nix@main` so Vite+ is available when Nix shell hooks run. The shared TypeScript setup selects pnpm through `packageManager`, and verification loads the environment with `eval "$(nix print-dev-env "$GITHUB_WORKSPACE#default")"` and runs `vp run --no-cache ci` for fresh CI validation. Local tasks retain their default caching. Keep shared `totto2727-org/monorepo` actions on `@main`.
 
 ## Package-specific rules
 
 - Keep all existing formatter defaults, including no semicolons, single quotes, print width 120, and preserved Markdown wrapping.
-- Keep `files: ["dist"]` aligned with generated outputs. Use pnpm as the only package manager and update `pnpm-lock.yaml` with `vp install` when dependencies change. Keep `packageManager` aligned with the pinned Nix shell's pnpm version. Update `flake.lock` only when Nix inputs change.
+- Keep `files: ["dist"]` aligned with generated outputs. Use pnpm as the only package manager and update `pnpm-lock.yaml` with `vp install` when dependencies change. Keep the external pnpm toolchain aligned with `packageManager`. Update `flake.lock` only when Nix inputs change.
 - Keep `pnpm-workspace.yaml`'s `minimumReleaseAge: 1440` and `minimumReleaseAgeStrict: true` for all new dependency resolutions, without exclusions. Keep the exact Vite+ 1.1.0 catalog entry and official `vite@*` alias and bundled `vitest@*` 5.0.3 overrides there. Preserve the other dependencies' caret ranges and deny Vite+ lifecycle scripts with `allowBuilds`. When updating Vite+, match the alias to the installed `vite-plus` version and the `vitest` override to `vp toolchain vitest`. See [pnpm dependency policy](https://pnpm.io/settings#minimumreleaseage).
 - Do not introduce `package.nix`, Nix package or CLI overlay outputs, CLI installation routes, or Nix build CI.
 - Keep README usage consumer-focused, document all public exports, and use only supported dependency installation paths. Write registry setup for the configured package name, assuming publication.

@@ -16,7 +16,7 @@
 | `pnpm-workspace.yaml`                    | pnpm installation policy, including the 24-hour release-age requirement.                            |
 | `vite.config.ts`                         | Vite+ formatter, linter, tests, declaration packaging, and aggregate tasks.                         |
 | `tsconfig.json`                          | Strictest and node-ts presets with minimal library source-checking overrides.                       |
-| `flake.nix`                              | Development shells only, with Node.js, Vite+, pnpm, and nixfmt.                                     |
+| `flake.nix`                              | Development shell with nixfmt and an externally bootstrapped Vite+ Git hook.                        |
 | `flake.lock`                             | Pinned Nix inputs.                                                                                  |
 | `.envrc`                                 | Optional direnv entry point.                                                                        |
 | `.github/workflows/ci.yml`               | Pre-merge checks, tests, and library packaging.                                                     |
@@ -40,10 +40,11 @@ Retain this policy in the generated project's `AGENTS.md`.
 Work from the copied repository root.
 Use the user's intended repository, package name, purpose, license, and publication target.
 Ask for missing registry ownership decisions rather than inventing credentials or publishing permissions.
-Enter `nix develop`, then run `vp install --frozen-lockfile`.
+Bootstrap Node.js 24, pnpm at the version in `packageManager`, and Vite+ on `PATH` before entering `nix develop`, then run `vp install --frozen-lockfile`.
 Review `.envrc` before explicitly allowing direnv.
-The shell supplies Node.js 24, pnpm, Vite+ through nix-vite-plus, and nixfmt, and runs `vp config` to enable Git hooks.
-Do not remove nix-vite-plus provisioning or manage unrelated Bun CLIs.
+The Nix shell supplies only nixfmt and runs the externally available `vp config` to enable Git hooks.
+Node.js, pnpm, and Vite+ are supplied externally, or by the shared TypeScript setup in CI, not by this library's Nix shell.
+Preserve this library's nixfmt-only provisioning policy and leave unrelated Bun CLIs unmanaged.
 The disabled publication workflow retains its original setup order and triggers. Review hook bootstrap before enabling it.
 CI uses `setup-typescript@main` before `setup-nix@main` so Vite+ is available before Nix shell hooks run. The TypeScript setup selects pnpm through `packageManager`, and verification loads the shell with `eval "$(nix print-dev-env "$GITHUB_WORKSPACE#default")"`.
 Keep all `totto2727-org/monorepo` action references on `@main`.
@@ -80,7 +81,7 @@ Keep `private: true` unless npm publication is explicitly wanted.
 
 1. Set the real package name, version, and repository URL, and ensure the npm package exists under an account or organization the user controls. If npm requires an initial authenticated publication before trusted-publisher settings exist, the package owner must perform it manually.
 2. Configure the package's npm Trusted Publisher with the exact GitHub owner, repository, and workflow filename `publish.yml`. Enable direct publication, not staged-only publishing. If an npm trusted-publisher environment is configured, add the matching protected environment to the workflow job.
-3. Review the [npm trusted publishing requirements](https://docs.npmjs.com/trusted-publishers/) and current shared [publish-npm action](https://github.com/totto2727-org/monorepo/blob/main/.github/actions/publish-npm/action.yaml). It runs `vp pm stage publish -r --provenance` after filtering private packages and versions already on the registry. The pinned development shell supplies pnpm. Keep job-scoped `id-token: write`, the GitHub-hosted runner, and `working-directory: .`. Do not add long-lived npm tokens.
+3. Review the [npm trusted publishing requirements](https://docs.npmjs.com/trusted-publishers/) and current shared [publish-npm action](https://github.com/totto2727-org/monorepo/blob/main/.github/actions/publish-npm/action.yaml). It runs `vp pm stage publish -r --provenance` after filtering private packages and versions already on the registry. The external toolchain or shared TypeScript setup supplies pnpm. Keep job-scoped `id-token: write`, the GitHub-hosted runner, and `working-directory: .`. Do not add long-lived npm tokens.
 4. Review third-party action pins and protect release tags. Remove `private: true` only when ready, then rename `publish.yml.disabled` to `publish.yml`. Delete the disabled workflow instead if publication is not wanted.
 5. Run pre-merge validation and review a real packed consumer before tagging. Push a protected `v<version>` tag that matches `package.json` only from a validated commit. The workflow installs locked dependencies, runs `vp pack`, and calls `totto2727-org/monorepo/.github/actions/publish-npm@main`. Do not duplicate CI checks, tests, or dry runs in the publish workflow. Use a new version for changed contents.
 
@@ -100,7 +101,7 @@ Check positive return types and rejected invalid arguments, not just declaration
 Keep temporary consumers and archives under ignored `tmp/` and out of commits.
 Remove temporary TypeScript consumers before whole-project checks, because TypeScript discovery does not honor `.gitignore`.
 Use pnpm as the only package manager and update `pnpm-lock.yaml` with `vp install` when dependencies change.
-Keep `packageManager` aligned with the pinned Nix shell's pnpm version.
+Keep the external pnpm toolchain aligned with `packageManager`.
 Keep `pnpm-workspace.yaml`'s `minimumReleaseAge: 1440` and `minimumReleaseAgeStrict: true` for new direct and transitive resolutions, with no exclusions.
 See [pnpm dependency policy](https://pnpm.io/settings#minimumreleaseage).
 Keep the exact Vite+ 1.1.0 catalog entry and official `vite@*` alias and bundled `vitest@*` 5.0.3 overrides in `pnpm-workspace.yaml`. Preserve caret ranges on the other dependencies and deny Vite+ lifecycle scripts through `allowBuilds`.
