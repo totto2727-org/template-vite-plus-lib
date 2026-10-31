@@ -19,7 +19,7 @@
 | `flake.nix`                              | Development shells only, with Node.js, Vite+, pnpm, and nixfmt.                                     |
 | `flake.lock`                             | Pinned Nix inputs.                                                                                  |
 | `.envrc`                                 | Optional direnv entry point.                                                                        |
-| `.github/workflows/ci.yml`               | Pre-merge checks, tests, library packaging, and npm contents validation.                            |
+| `.github/workflows/ci.yml`               | Pre-merge checks, tests, and library packaging.                                                     |
 | `.github/workflows/publish.yml.disabled` | Disabled repository-linked npm OIDC publication.                                                    |
 | `.gitignore`                             | Local dependencies, generated output, archives, and temporary files excluded from Git.              |
 | `LICENSE`                                | License and copyright holder to review.                                                             |
@@ -42,7 +42,10 @@ Use the user's intended repository, package name, purpose, license, and publicat
 Ask for missing registry ownership decisions rather than inventing credentials or publishing permissions.
 Enter `nix develop`, then run `vp install --frozen-lockfile`.
 Review `.envrc` before explicitly allowing direnv.
-CI uses `setup-nix@main`, then `setup-typescript@main`, which selects pnpm through `packageManager`, and loads the shell in its run step with `eval "$(nix print-dev-env "$GITHUB_WORKSPACE#default")"`.
+The shell supplies Node.js 24, pnpm, Vite+ through nix-vite-plus, and nixfmt, and runs `vp config` to enable Git hooks.
+Do not remove nix-vite-plus provisioning or manage unrelated Bun CLIs.
+The disabled publication workflow retains its original setup order and triggers. Review hook bootstrap before enabling it.
+CI uses `setup-typescript@main` before `setup-nix@main` so Vite+ is available before Nix shell hooks run. The TypeScript setup selects pnpm through `packageManager`, and verification loads the shell with `eval "$(nix print-dev-env "$GITHUB_WORKSPACE#default")"`.
 Keep all `totto2727-org/monorepo` action references on `@main`.
 
 ### 2. Replace the library and metadata
@@ -84,7 +87,7 @@ Keep `private: true` unless npm publication is explicitly wanted.
 ### 5. Validate and hand off
 
 Run `vp run fix` and `vp run ci`.
-The aggregate task runs `check`, `test`, and `build` concurrently, with `package` running `vp pm pack -- --dry-run` only after `build` completes.
+The aggregate task runs `check`, `test`, and `build` concurrently.
 All tasks, including `fix`, use Vite+ default caching.
 The build task excludes `dist/**` from automatic inputs and restores `dist/**` outputs on cache hits.
 Keep `dist/` ignored by the formatter and linter.

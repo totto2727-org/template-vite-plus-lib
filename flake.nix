@@ -36,6 +36,10 @@
               pkgs.vite-plus
               pkgs.nixfmt
             ];
+            shellHook = ''
+              # Enable Git hooks after provisioning Vite+.
+              vp config
+            '';
           };
         }
       );
