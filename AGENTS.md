@@ -42,11 +42,11 @@ Use the user's intended repository, package name, purpose, license, and publicat
 Ask for missing registry ownership decisions rather than inventing credentials or publishing permissions.
 Bootstrap Node.js 24, pnpm at the version in `packageManager`, and Vite+ on `PATH` before entering `nix develop`, then run `vp install --frozen-lockfile`.
 Review `.envrc` before explicitly allowing direnv.
-The Nix shell supplies only nixfmt and runs the externally available `vp config` to enable Git hooks.
+The default Nix shell supplies only nixfmt and runs the externally available `vp config` to enable Git hooks. The `ci` shell supplies the same tools with an empty shell hook.
 Node.js, pnpm, and Vite+ are supplied externally, or by the shared TypeScript setup in CI, not by this library's Nix shell.
 Preserve this library's nixfmt-only provisioning policy and leave unrelated Bun CLIs unmanaged.
 The disabled publication workflow retains its original setup order and triggers. Review hook bootstrap before enabling it.
-CI uses `setup-typescript@main` before `setup-nix@main` so Vite+ is available before Nix shell hooks run. The TypeScript setup selects pnpm through `packageManager`, and verification loads the shell with `eval "$(nix print-dev-env "$GITHUB_WORKSPACE#default")"`.
+CI uses `setup-nix@main` with `dev-shell: ci`, then `setup-typescript@main`. The TypeScript setup selects pnpm through `packageManager`, and verification loads the hook-free shell with `eval "$(nix print-dev-env "$GITHUB_WORKSPACE#ci")"` and runs `vp run ci`.
 Keep all `totto2727-org/monorepo` action references on `@main`.
 
 ### 2. Replace the library and metadata
