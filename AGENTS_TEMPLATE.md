@@ -20,6 +20,7 @@ flake.nix           Development shells only
 
 - Bootstrap Node.js 24, the pnpm version in `packageManager`, and Vite+ on `PATH` before running `nix develop` from the repository root.
 - Use Vite+ for both formatting and linting, source type checks, tests, and library packaging.
+- Keep formatter and linter exclusions synchronized with `.gitignore` through `@totto2727/gitignore-patterns` in `vite.config.ts` instead of adding duplicate ignore lists.
 - Keep temporary consumers and package archives under ignored `tmp/` and out of commits.
 - Keep `AGENTS.md` canonical without creating `CLAUDE.md`.
 
