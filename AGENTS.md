@@ -56,6 +56,7 @@ Replace the greeting implementation and tests with the requested library.
 Keep public exports in `src/index.ts`, and align `exports`, `types`, and `files` with the generated files.
 Keep `private: true` until the user explicitly configures publication.
 Retain Vite+ for both formatting and linting, with all existing formatter settings including `semi: false`, single quotes, print width 120, and preserved Markdown wrapping.
+Keep formatter and linter exclusions synchronized with `.gitignore` through `@totto2727/gitignore-patterns` in `vite.config.ts` instead of adding duplicate ignore lists.
 Do not add `CLAUDE.md`, `package.nix`, Nix package/CLI overlay outputs, CLI entry points, or Nix build CI.
 
 Use `vp pack` to build the library with `pack.dts: true`, or `vp run build` for the cache-aware task.
