@@ -43,7 +43,7 @@ flake.nix           Development shells only
 ### CI and publication policy
 
 - Keep the inherited CI and publication workflows unchanged by default.
-- Do not replace publication on pushes to `main` with tag or release triggers. Preserve existing tag triggers where already configured.
+- Publication runs on pushes to `main`, including merges. Do not add tag or release triggers.
 - Change workflows only for an explicit user request or a demonstrated project requirement, and explain why the change is necessary.
 - Publication setup does not justify unrelated CI changes.
 
@@ -71,7 +71,7 @@ flake.nix           Development shells only
 - Keep README usage consumer-focused, document all public exports, and use only supported dependency installation paths. Write registry setup for the configured package name, assuming publication.
 - Keep `private: true` and `publish.yml.disabled` until the package owner configures npm trusted publishing for the exact GitHub owner, repository, and workflow filename `publish.yml`. If an initial package publication is required to create registry settings, the owner must perform it manually. Permit direct publishing, not staged-only publishing. Match any configured environment with a protected workflow job environment.
 - The disabled publication workflow retains its original setup order and triggers. Review Nix hook bootstrap before enabling publication.
-- Before enabling publication, review package metadata, third-party action pins, protected release tags, and a real packed consumer. Remove `private: true` and rename the disabled file to `publish.yml` only after registry linking. Use a protected `v<version>` tag matching the manifest from a validated commit.
+- Before enabling publication, review package metadata, third-party action pins, branch protection, and a real packed consumer. Remove `private: true` and rename the disabled file to `publish.yml` only after registry linking. Merge validated changes into protected `main` to trigger publication. Tag pushes do not publish.
 - Retain job-scoped `id-token: write` and a GitHub-hosted runner. Do not add long-lived registry tokens. The publish workflow installs locked dependencies, runs `vp pack`, then calls `publish-npm@main` with the required `working-directory: .`. It must not duplicate pre-merge checks, tests, or dry runs.
 - The shared publish action uses `vp pm stage publish -r --provenance` and filters private packages and versions already present on the registry. Use a new version for changed contents. Keep the workflow disabled or remove it when publication is not wanted.
 
