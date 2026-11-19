@@ -20,7 +20,7 @@ export default defineConfig({
     singleQuote: true,
   },
   lint: { ignorePatterns, options: { typeAware: true, typeCheck: true } },
-  test: { include: ['src/**/*.test.ts'] },
+  test: { dir: 'src' },
   pack: { entry: ['src/index.ts'], format: ['esm'], platform: 'neutral', dts: true, clean: true },
   run: {
     tasks: {
