@@ -105,8 +105,8 @@ Use pnpm as the only package manager and update `pnpm-lock.yaml` with `vp instal
 Keep the external pnpm toolchain aligned with `packageManager`.
 Keep `pnpm-workspace.yaml`'s `minimumReleaseAge: 1440` and `minimumReleaseAgeStrict: true` for new direct and transitive resolutions, with no exclusions.
 See [pnpm dependency policy](https://pnpm.io/settings#minimumreleaseage).
-Keep the exact Vite+ 1.1.0 catalog entry and official `vite@*` alias and bundled `vitest@*` 5.0.3 overrides in `pnpm-workspace.yaml`. Preserve caret ranges on the other dependencies and review dependency lifecycle scripts before allowing them.
-When updating Vite+, match the `vite` alias to the installed `vite-plus` version and the `vitest` override to `vp toolchain vitest`.
+Keep the exact Vite+ catalog pin and its matching official `vite@*` alias and bundled `vitest@*` overrides in `pnpm-workspace.yaml`. Preserve caret ranges on the other dependencies and review dependency lifecycle scripts before allowing them.
+When updating Vite+, match the `vite` alias to the core dependency in the Vite+ release and the `vitest` override to `vp toolchain vitest`.
 Update `flake.lock` only when Nix inputs change.
 Validate both the active CI workflow and disabled publication file with actionlint without enabling publication.
 Review final documents for obsolete placeholders and links before committing.
