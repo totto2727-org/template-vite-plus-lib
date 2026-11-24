@@ -30,7 +30,7 @@
 
 Keep the template's CI and publication workflows unchanged by default when creating a project.
 In particular, do not replace publication on pushes to `main` with tag or release triggers.
-Preserve existing tag triggers where the template already uses them.
+Publication runs on pushes to `main`, including merges. Tag pushes do not trigger publication.
 Change workflows only for an explicit user request or a demonstrated project requirement, and explain why the change is necessary.
 Project metadata replacement and the optional publication setup below are permitted, but do not justify unrelated CI changes.
 Retain this policy in the generated project's `AGENTS.md`.
@@ -83,8 +83,8 @@ Keep `private: true` unless npm publication is explicitly wanted.
 1. Set the real package name, version, and repository URL, and ensure the npm package exists under an account or organization the user controls. If npm requires an initial authenticated publication before trusted-publisher settings exist, the package owner must perform it manually.
 2. Configure the package's npm Trusted Publisher with the exact GitHub owner, repository, and workflow filename `publish.yml`. Enable direct publication, not staged-only publishing. If an npm trusted-publisher environment is configured, add the matching protected environment to the workflow job.
 3. Review the [npm trusted publishing requirements](https://docs.npmjs.com/trusted-publishers/) and current shared [publish-npm action](https://github.com/totto2727-org/monorepo/blob/main/.github/actions/publish-npm/action.yaml). It runs `vp pm stage publish -r --provenance` after filtering private packages and versions already on the registry. The external toolchain or shared TypeScript setup supplies pnpm. Keep job-scoped `id-token: write`, the GitHub-hosted runner, and `working-directory: .`. Do not add long-lived npm tokens.
-4. Review third-party action pins and protect release tags. Remove `private: true` only when ready, then rename `publish.yml.disabled` to `publish.yml`. Delete the disabled workflow instead if publication is not wanted.
-5. Run pre-merge validation and review a real packed consumer before tagging. Push a protected `v<version>` tag that matches `package.json` only from a validated commit. The workflow installs locked dependencies, runs `vp pack`, and calls `totto2727-org/monorepo/.github/actions/publish-npm@main`. Do not duplicate CI checks, tests, or dry runs in the publish workflow. Use a new version for changed contents.
+4. Review third-party action pins and protect `main`. Remove `private: true` only when ready, then rename `publish.yml.disabled` to `publish.yml`. Delete the disabled workflow instead if publication is not wanted.
+5. Run pre-merge validation and review a real packed consumer, then merge validated changes into `main` to trigger publication. Do not add a tag trigger. The workflow installs locked dependencies, runs `vp pack`, and calls `totto2727-org/monorepo/.github/actions/publish-npm@main`. Do not duplicate CI checks, tests, or dry runs in the publish workflow. Use a new version for changed contents.
 
 ### 5. Validate and hand off
 
