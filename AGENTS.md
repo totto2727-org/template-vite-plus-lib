@@ -8,8 +8,7 @@
 | `AGENTS.md`                              | Template file map and initialization steps, replaced during initialization.                         |
 | `README_TEMPLATE.md`                     | Consumer library README to customize and promote to README.md.                                      |
 | `AGENTS_TEMPLATE.md`                     | Developer guidance to customize and promote to AGENTS.md.                                           |
-| `src/index.ts`                           | Public library exports.                                                                             |
-| `src/greet.ts`                           | Sample library function to replace.                                                                 |
+| `src/greet.ts`                           | Sample function and public library entry point.                                                     |
 | `src/greet.test.ts`                      | Tests through the public library entry point.                                                       |
 | `package.json`                           | Private-by-default package identity, ESM exports, declarations, dependencies, and package contents. |
 | `pnpm-lock.yaml`                         | Sole dependency lock for pnpm.                                                                      |
@@ -53,7 +52,7 @@ Keep all `totto2727-org/monorepo` action references on `@main`.
 
 Replace the name, version, description, repository URL, and license in `package.json`, the flake description, and the license holder.
 Replace the greeting implementation and tests with the requested library.
-Keep public exports in `src/index.ts`, and align `exports`, `types`, and `files` with the generated files.
+Keep public exports in `src/greet.ts`, and align `exports`, `types`, and `files` with the generated files.
 Keep `private: true` until the user explicitly configures publication.
 Retain Vite+ for both formatting and linting, with all existing formatter settings including `semi: false`, single quotes, print width 120, and preserved Markdown wrapping.
 Keep formatter and linter exclusions synchronized with `.gitignore` through `@totto2727/gitignore-patterns` in `vite.config.ts` instead of adding duplicate ignore lists.

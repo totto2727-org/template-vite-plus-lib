@@ -3,8 +3,7 @@
 ## Repository structure
 
 ```text
-src/index.ts        Public library entry point
-src/greet.ts        Greeting implementation
+src/greet.ts        Greeting implementation and public library entry point
 src/greet.test.ts   Public-entry-point tests
 vite.config.ts      Vite+ formatter, linter, tests, packaging, and tasks
 package.json        Package identity and runtime/type export map
@@ -49,7 +48,7 @@ flake.nix           Development shells only
 
 ### Public library boundary
 
-- Export the consumer API from `src/index.ts` and test that public entry point.
+- Export the consumer API from `src/greet.ts` and test that public entry point.
 - Keep `package.json` export conditions aligned with `dist/index.js` and `dist/index.d.ts`, with `types` before `import`.
 - This package is ESM-only. Do not imply CommonJS support without adding and validating that output.
 - `vp check` checks source types, but does not prove declarations reach consumers. For export changes, install a real npm archive into an isolated consumer under `tmp/`, compile imports by package name with strict NodeNext resolution, check rejected invalid calls, and execute the built exports.
